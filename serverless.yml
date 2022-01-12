@@ -1,0 +1,43 @@
+service: trevodourado-image-resizer
+
+frameworkVersion: '2 || 3'
+
+plugins:
+  - serverless-bundle
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: eu-west-1
+  timeout: 30
+  lambdaHashingVersion: 20201221
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:*"
+      Resource:        
+        - "arn:aws:s3:::trevodourado.images.served/*"
+        - "arn:aws:s3:::trevodourado.images/*"
+
+custom:
+  bundle:
+    packagerOptions:
+      scripts:
+        - rimraf node_modules/sharp       
+        - npm install --arch=x64 --platform=linux sharp
+    copyFiles:                      
+      - from: './node_modules/jimp/fonts' 
+        to: './fonts'
+
+functions:
+  hello:
+    handler: handler.hello
+    environment:
+      DIRNAME: /var/task
+    events:
+      - s3:
+          bucket: trevodourado.images
+          event: s3:ObjectCreated:*
+          rules:
+            - suffix: .jpg
+          existing: true
